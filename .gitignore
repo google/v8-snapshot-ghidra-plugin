@@ -1,0 +1,5 @@
+.*
+*.sla
+/bin/
+/main/
+/test/
