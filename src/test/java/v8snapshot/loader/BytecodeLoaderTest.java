@@ -19,7 +19,7 @@ public class BytecodeLoaderTest {
 
     assertThat(specs.size()).isEqualTo(1);
     assertThat(specs.get(0).getLanguageCompilerSpec())
-        .isEqualTo(new LanguageCompilerSpecPair("v8.5:LE:32:default", "default"));
+        .isEqualTo(new LanguageCompilerSpecPair("v8.5:LE:64:compact", "default"));
   }
 
   @Test

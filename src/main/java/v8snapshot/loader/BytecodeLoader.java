@@ -10,6 +10,7 @@
 package v8snapshot.loader;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import ghidra.app.util.Option;
 import ghidra.app.util.bin.BinaryReader;
 import ghidra.app.util.bin.ByteProvider;
@@ -29,6 +30,16 @@ public final class BytecodeLoader extends AbstractLibrarySupportLoader {
   private static final byte[] FILE_MAGIC = {(byte) 0xDE, (byte) 0xC0};
   private static final long FILE_MAGIC_LENGTH = 4;
 
+  private final ImmutableMap<LanguageCompilerSpecPair, VersionLoaderProvider.Builder> providerBuilderMap;
+
+  public BytecodeLoader() {
+    ImmutableMap.Builder<LanguageCompilerSpecPair, VersionLoaderProvider.Builder> mapBuilder =
+        ImmutableMap.builder();
+    bindAllSupportedSpecs(mapBuilder,
+        new v8snapshot.versiondeps.v85.VersionLoaderProvider.Builder());
+    providerBuilderMap = mapBuilder.build();
+  }
+
   @Override
   public String getName() {
     return "V8 snapshot loader";
@@ -45,8 +56,10 @@ public final class BytecodeLoader extends AbstractLibrarySupportLoader {
     byte[] magicBytes = reader.readByteArray(2, 2);
     if (Arrays.equals(magicBytes, FILE_MAGIC)) {
       // TODO: Search the version hash for the exact v8 version.
-      loadSpecs.add(new LoadSpec(this, 0,
-          new LanguageCompilerSpecPair("v8.5:LE:32:default", "default"), true));
+      providerBuilderMap.keySet().forEach(spec -> {
+        loadSpecs.add(new LoadSpec(this, 0, spec, /* isPreferred= */false));
+      });
+
     }
     return loadSpecs.build();
   }
@@ -54,7 +67,14 @@ public final class BytecodeLoader extends AbstractLibrarySupportLoader {
   @Override
   protected void load(ByteProvider provider, LoadSpec loadSpec, List<Option> options,
       Program program, TaskMonitor monitor, MessageLog log) {
-    throw new UnsupportedOperationException("Not implemented yet.");
+    LanguageCompilerSpecPair langSpec = loadSpec.getLanguageCompilerSpec();
+    VersionLoaderProvider loaderProvider;
+
+    if (!providerBuilderMap.containsKey(langSpec)) {
+      throw new UnsupportedOperationException(
+          String.format("Unsupported language spec: '%s'.", langSpec));
+    }
+    loaderProvider = providerBuilderMap.get(langSpec).build(provider, langSpec);
   }
 
   @Override
@@ -73,5 +93,13 @@ public final class BytecodeLoader extends AbstractLibrarySupportLoader {
     // TODO: If this loader has custom options, validate them here. Not all options
     // require validation.
     return super.validateOptions(provider, loadSpec, options, program);
+  }
+
+  private static void bindAllSupportedSpecs(
+      ImmutableMap.Builder<LanguageCompilerSpecPair, VersionLoaderProvider.Builder> mapBuilder,
+      VersionLoaderProvider.Builder providerBuilder) {
+    for (LanguageCompilerSpecPair langSpec : providerBuilder.getSupportedSpecs()) {
+      mapBuilder.put(langSpec, providerBuilder);
+    }
   }
 }
