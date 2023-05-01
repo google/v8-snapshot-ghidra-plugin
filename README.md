@@ -1,7 +1,7 @@
 
 # V8-snapshot-Ghidra-Plugin
 
-**This is not an officially supported Google product.**
+**This project is not from the V8 team. This is not an officially supported Google product. There is no guarantee this project will be maintained.**
 
 This extension supports V8 snapshot binary format from V8 version 8.5.210.20. It is possible that newer versions will not work due to major changes in the format between V8 versions. 
 
